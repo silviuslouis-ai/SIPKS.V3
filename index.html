@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Sistem Informasi Penanaman Kelapa Sawit Interaktif - Tugas Pak Arif">
+  <title>🌴 SIP-KS V3.0 | Tugas Pak Arif</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#22c55e">
+
+  <!-- Preconnect to CDNs for faster loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://unpkg.com">
+
+  <!-- Favicon (lokal, compressed) -->
+  <link rel="icon" href="favicon.png" type="image/png">
+
+  <!-- Font Poppins (preload for critical) -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" as="style">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind + DaisyUI (defer load) -->
+  <script defer src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" />
+
+  <!-- Styles (inline for critical path) -->
+  <style>
+    :root {
+      --primary: #22c55e; --secondary: #f59e0b; --accent: #8b5cf6;
+      --bg-gradient: linear-gradient(135deg, #ecfccb 0%, #d9f99d 100%);
+    }
+    .dark { --bg-gradient: linear-gradient(135deg, #1a2a1a 0%, #0f1a0f 100%); }
+    body { background: var(--bg-gradient); font-family: 'Poppins', sans-serif; overflow-x: hidden; }
+    .glass { background: rgba(255, 255, 255, 0.18); backdrop-filter: blur(14px); border: 1px solid rgba(255,255,255,0.25); }
+    .card-3d { transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: perspective(1000px); }
+    .card-3d:hover { transform: perspective(1000px) rotateX(12deg) rotateY(12deg) scale(1.08); box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+    .node-circle { width: 135px; height: 135px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.4s ease; box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+    .node-circle:hover { transform: scale(1.3) translateY(-20px) rotate(360deg); box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
+    .neon-slider::-webkit-slider-thumb { @apply h-7 w-7 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/60; }
+    .pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    .float { animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-25px); } }
+    .sparkle { position: absolute; width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: sparkle 1.8s infinite; }
+    @keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(0); } 50% { opacity: 1; transform: scale(1.2); } }
+    .mindmap-svg line { stroke: var(--primary); stroke-width: 4; stroke-dasharray: 8,6; animation: dash 2.5s linear infinite; }
+    @keyframes dash { to { stroke-dashoffset: -14; } }
+    .fullscreen-btn { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+    /* Flowchart styles */
+    .flowchart { font-family: sans-serif; text-align: center; }
+    .flow-node { display: inline-block; padding: 10px; margin: 10px; border: 2px solid #000; border-radius: 5px; background: white; min-width: 100px; }
+    .flow-arrow { font-size: 20px; color: #333; }
+  </style>
+</head>
+<body class="text-gray-800 dark:text-gray-200">
+
+  <!-- Navbar -->
+  <nav class="navbar glass shadow-2xl sticky top-0 z-50" data-aos="fade-down">
+    <div class="navbar-start">
+      <a href="#home" class="btn btn-ghost text-2xl font-bold text-[var(--primary)] pulse">
+        <i data-lucide="palms" class="w-9 h-9"></i> SIP-KS V3.0
+      </a>
+    </div>
+    <div class="navbar-end gap-2">
+      <button onclick="toggleDark()" class="btn btn-circle btn-ghost hover:rotate-180 transition-all">
+        <i data-lucide="moon" id="icon-moon" class="w-6 h-6"></i>
+        <i data-lucide="sun" id="icon-sun" class="w-6 h-6 hidden"></i>
+      </button>
+      <button onclick="enterFullscreen()" class="btn btn-circle btn-ghost">
+        <i data-lucide="maximize-2" class="w-6 h-6"></i>
+      </button>
+      <button onclick="confettiBurst()" class="btn btn-circle btn-ghost">
+        <i data-lucide="party-popper" class="w-6 h-6"></i>
+      </button>
+      <div class="hidden md:flex gap-1">
+        <a href="#home" class="btn btn-sm glass">Beranda</a>
+        <a href="#tahapan" class="btn btn-sm glass">Tahapan</a>
+        <a href="#dashboard" class="btn btn-sm glass">Dashboard</a>
+        <a href="#curah-hujan" class="btn btn-sm glass">Cuaca</a>
+        <a href="#panduan" class="btn btn-sm glass">Panduan</a>
+        <a href="#kalkulator" class="btn btn-sm glass">Kalkulator</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero dengan Lottie + Sparkles -->
+  <section id="home" class="min-h-screen flex items-center justify-center relative px-6 overflow-hidden" data-aos="zoom-in">
+    <div class="absolute inset-0 -z-10">
+      <lottie-player src="animation.json" background="transparent" speed="0.7" loop autoplay style="width: 100%; height: 100%;"></lottie-player>
+    </div>
+    <div class="text-center z-10 glass p-14 rounded-3xl max-w-4xl card-3d float" data-aos="fade-up" data-aos-delay="400">
+      <h1 class="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] mb-6">SIP-KS</h1>
+      <p class="text-2xl md:text-3xl font-bold mb-10 text-gray-700 dark:text-gray-200">
+        Sistem Informasi Penanaman Kelapa Sawit
+      </p>
+      <p class="text-lg mb-8 text-gray-600 dark:text-gray-300">[ Nama : Silvius Louis Maruni (STIP)
+23243001
+Syaiful Faqih (SMPKS)
+23241009
+Tri Anto Pranata (SMPKS)
+23241010
+Ardi Winata Howard Sitio (SMPKS)
+23241011 ] • Dosen: Bapak Arif, S.T., M.Kom</p>
+      <div class="flex justify-center gap-6">
+        <a href="#tahapan" class="btn btn-lg bg-[var(--primary)] text-white card-3d pulse">Mulai Belajar</a>
+        <a href="#dashboard" class="btn btn-lg btn-outline card-3d">Dashboard</a>
+      </div>
+    </div>
+    <div class="absolute top-32 left-24 sparkle" style="animation-delay: 0.3s;"></div>
+    <div class="absolute bottom-32 right-24 sparkle" style="animation-delay: 1s;"></div>
+  </section>
+
+  <!-- MindMap -->
+  <section id="tahapan" class="py-24 px-6">
+    <h2 class="text-5xl font-bold text-center mb-16 text-[var(--primary)]" data-aos="fade-up">
+      Tahapan Penanaman Kelapa Sawit
+    </h2>
+    <div class="relative max-w-6xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+      <svg class="mindmap-svg absolute inset-0 w-full h-full -z-10 opacity-75">
+        <line x1="50%" y1="10%" x2="20%" y2="40%" />
+        <line x1="50%" y1="10%" x2="40%" y2="40%" />
+        <line x1="50%" y1="10%" x2="60%" y2="40%" />
+        <line x1="50%" y1="10%" x2="80%" y2="40%" />
+        <line x1="50%" y1="10%" x2="50%" y2="40%" />
+      </svg>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-10" id="mindmap"></div>
+    </div>
+
+    <div id="detail-section" class="mt-20 max-w-5xl mx-auto glass p-10 rounded-3xl hidden relative card-3d" data-aos="flip-up">
+      <button onclick="bacaPenjelasan()" class="btn btn-sm btn-ghost absolute top-6 right-6 pulse">
+        <i data-lucide="volume-2"></i> Baca Aloud
+      </button>
+      <div id="detail-content" class="prose prose-lg dark:prose-invert max-w-none"></div>
+    </div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="py-24 px-6 bg-gradient-to-b from-transparent to-green-50 dark:to-gray-900">
+    <h2 class="text-5xl font-bold text-center mb-16 text-[var(--accent)]" data-aos="fade-up">
+      Dashboard Interaktif
+    </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-7xl mx-auto">
+      <div class="glass p-8 rounded-3xl card-3d" data-aos="fade-right" data-aos-delay="100">
+        <h3 class="text-2xl font-bold mb-6 text-[var(--primary)] flex items-center gap-3">
+          <i data-lucide="trending-up" class="animate-bounce"></i> Grafik Pertumbuhan Umur 0-5 Tahun
+        </h3>
+        <p class="text-sm mb-4 text-gray-600">Data berdasarkan rata-rata dari IOPRI & BPS: Tinggi (m) & Produksi (ton/ha). Edit data di bawah untuk simulasi.<grok-card data-id="9c300a" data-type="citation_card"></grok-card></p>
+        <canvas id="chartTinggi" class="bg-white/60 dark:bg-gray-800 p-5 rounded-2xl"></canvas>
+        <canvas id="chartProduksi" class="bg-white/60 dark:bg-gray-800 p-5 rounded-2xl mt-6"></canvas>
+        <!-- Editable Data -->
+        <div class="mt-4 space-y-2">
+          <label class="block text-sm font-bold">Edit Tinggi Umur 5 (m):</label>
+          <input type="number" id="edit-tinggi5" value="5.0" min="0" step="0.1" class="input input-bordered w-full" onchange="updateGrowthCharts()">
+          <label class="block text-sm font-bold">Edit Produksi Umur 5 (ton/ha):</label>
+          <input type="number" id="edit-produksi5" value="10" min="0" step="0.1" class="input input-bordered w-full" onchange="updateGrowthCharts()">
+        </div>
+      </div>
+      <div class="glass p-8 rounded-3xl card-3d" data-aos="fade-up" data-aos-delay="300">
+        <h3 class="text-2xl font-bold mb-6 text-[var(--secondary)] flex items-center gap-3">
+          <i data-lucide="table" class="animate-pulse"></i> Edit Data Pertumbuhan
+        </h3>
+        <div class="overflow-x-auto max-h-96">
+          <table class="table table-xs" id="tabel-edit">
+            <thead>
+              <tr>
+                <th>Umur (Tahun)</th>
+                <th>Tinggi (m)</th>
+                <th>Produksi (ton/ha)</th>
+              </tr>
+            </thead>
+            <tbody id="tabel-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="glass p-8 rounded-3xl card-3d" data-aos="fade-left" data-aos-delay="500">
+        <h3 class="text-2xl font-bold mb-6 text-[var(--accent)] flex items-center gap-3">
+          <i data-lucide="flask-conical" class="animate-spin"></i> Simulasi Faktor
+        </h3>
+        <div class="space-y-8">
+          <div>
+            <label class="block font-semibold text-blue-600 mb-2">Curah Hujan (mm)</label>
+            <input type="range" min="50" max="300" value="200" id="sim-curah" class="w-full neon-slider">
+            <div class="text-center text-xl font-bold mt-2" id="val-curah">200 mm</div>
+          </div>
+          <div>
+            <label class="block font-semibold text-yellow-600 mb-2">Pupuk (kg/ha)</label>
+            <input type="range" min="100" max="500" value="300" id="sim-pupuk" class="w-full neon-slider">
+            <div class="text-center text-xl font-bold mt-2" id="val-pupuk">300 kg</div>
+          </div>
+          <div class="p-5 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] rounded-2xl text-white text-center pulse">
+            <p id="hasil-simulasi" class="text-xl font-bold"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Curah Hujan + Flowchart -->
+  <section id="curah-hujan" class="py-24 px-6">
+    <h2 class="text-5xl font-bold text-center mb-16 text-blue-700" data-aos="fade-up">
+      Siklus Curah Hujan & Flowchart (Sumber: BMKG)
+    </h2>
+    <div class="max-w-5xl mx-auto glass p-10 rounded-3xl card-3d" data-aos="zoom-in">
+      <p class="text-center mb-4 text-gray-600">Curah hujan optimal: 1.500-3.000 mm/tahun (optimum 2.000-2.500 mm). Bulan kering (<60 mm) maks. 3 bulan. Sumber: Buletin Iklim BMKG 2025.<grok-card data-id="145868" data-type="citation_card"></grok-card></p>
+      <select id="lokasi-cuaca" class="select select-bordered w-full mb-8" data-aos="fade-down" onchange="updateChartCuaca()">
+        <option value="riau">Riau</option>
+        <option value="kalimantan">Kalimantan</option>
+        <option value="sumut">Sumatera Utara</option>
+      </select>
+      <canvas id="chartCurahHujan" class="bg-white/80 dark:bg-gray-800 p-6 rounded-2xl mb-8" data-aos="fade-up"></canvas>
+      <!-- Flowchart SVG -->
+      <div class="flowchart mb-8" data-aos="fade-up">
+        <svg width="600" height="300" xmlns="http://www.w3.org/2000/svg">
+          <!-- Start -->
+          <rect x="250" y="10" width="100" height="40" fill="#e0f7fa" stroke="#00796b"/>
+          <text x="300" y="35" text-anchor="middle">Curah Hujan Bulanan</text>
+          <!-- Arrows and conditions -->
+          <line x1="300" y1="50" x2="300" y2="70" stroke="#333" marker-end="url(#arrow)"/>
+          <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"><polygon points="0 0, 10 3, 0 6" fill="#333"/></marker></defs>
+          <!-- Low -->
+          <rect x="50" y="80" width="100" height="40" fill="#fff3e0" stroke="#ef6c00"/>
+          <text x="100" y="105" text-anchor="middle">Rendah (<100 mm)</text>
+          <line x1="100" y1="120" x2="100" y2="140" stroke="#333" marker-end="url(#arrow)"/>
+          <text x="80" y="155" font-size="12">Risiko Kekeringan</text>
+          <!-- Medium -->
+          <rect x="250" y="80" width="100" height="40" fill="#e8f5e8" stroke="#388e3c"/>
+          <text x="300" y="105" text-anchor="middle">Menengah (100-400 mm)</text>
+          <line x1="300" y1="120" x2="300" y2="140" stroke="#333" marker-end="url(#arrow)"/>
+          <text x="280" y="155" font-size="12">Optimal Pertumbuhan</text>
+          <!-- High -->
+          <rect x="450" y="80" width="100" height="40" fill="#fce4ec" stroke="#c2185b"/>
+          <text x="500" y="105" text-anchor="middle">Tinggi (>400 mm)</text>
+          <line x1="500" y1="120" x2="500" y2="140" stroke="#333" marker-end="url(#arrow)"/>
+          <text x="480" y="155" font-size="12">Risiko Banjir</text>
+          <!-- Arrows from start -->
+          <line x1="250" y1="70" x2="100" y2="80" stroke="#333"/>
+          <line x1="350" y1="70" x2="300" y2="80" stroke="#333"/>
+          <line x1="450" y1="70" x2="500" y2="80" stroke="#333"/>
+        </svg>
+      </div>
+      <div class="glass p-8 rounded-3xl" data-aos="fade-up" data-aos-delay="300">
+        <h3 class="text-xl font-bold mb-4 text-green-600">Peta Zona Ideal Tanam</h3>
+        <div id="map" style="height: 350px; border-radius: 1rem;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Panduan Penanaman -->
+  <section id="panduan" class="py-24 px-6 bg-gradient-to-t from-green-50 to-transparent dark:from-gray-900">
+    <h2 class="text-5xl font-bold text-center mb-16 text-[var(--primary)]" data-aos="fade-up">
+      Panduan Lengkap Penanaman Kelapa Sawit
+    </h2>
+    <div class="max-w-5xl mx-auto space-y-8" data-aos="fade-up">
+      <!-- Jarak Tanam -->
+      <div class="glass p-6 rounded-2xl card-3d">
+        <h3 class="text-2xl font-bold mb-4 text-[var(--secondary)]">Jarak Tanam Standar</h3>
+        <p class="mb-4">Jarak antar pohon: 9m x 9m (143 pohon/ha). Bisa disesuaikan 7-9m. Sumber: PPKS & Direktorat Jenderal Perkebunan.<grok-card data-id="30c1f5" data-type="citation_card"></grok-card></p>
+        <label class="block font-semibold mb-2">Simulasi Jarak Tanam (m):</label>
+        <input type="range" min="7" max="12" value="9" id="sim-jarak" class="w-full neon-slider">
+        <div class="text-center text-xl font-bold mt-2" id="val-jarak">9 m</div>
+        <p class="text-center mt-2" id="pohon-ha">Pohon/ha: 143</p>
+      </div>
+      <!-- Sebelum Tanam -->
+      <div class="glass p-6 rounded-2xl card-3d">
+        <h3 class="text-2xl font-bold mb-4 text-[var(--accent)]">Langkah Sebelum Tanam</h3>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700">
+          <li>Pilih bibit unggul bersertifikat (umur 12 bulan, tinggi >1m).</li>
+          <li>Persiapan lahan: Pembersihan vegetasi, pemancangan, buat lubang 50x40x40 cm (beberapa hari sebelum).</li>
+          <li>Uji tanah: pH 4-6.5, drainase baik, curah hujan >1500 mm/tahun.</li>
+          <li>Alat: Cangkul, pupuk dasar (TSP 200g/lubang).</li>
+        </ul>
+      </div>
+      <!-- Saat Tanam -->
+      <div class="glass p-6 rounded-2xl card-3d">
+        <h3 class="text-2xl font-bold mb-4 text-[var(--primary)]">Persyaratan & Saat Tanam</h3>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700">
+          <li>Bibit sehat, tanam di musim hujan (awal hujan).</li>
+          <li>Tanam pagi/sore, tekan tanah ringan, siram air.</li>
+          <li>Pupuk dasar: Urea 100g, SP-36 200g, KCl 100g per lubang.</li>
+          <li>Yang harus ada: Air bersih, pupuk, alat pelindung.</li>
+        </ul>
+      </div>
+      <!-- Setelah Tanam -->
+      <div class="glass p-6 rounded-2xl card-3d">
+        <h3 class="text-2xl font-bold mb-4 text-[var(--secondary)]">Langkah Setelah Tanam</h3>
+        <ul class="list-disc pl-6 space-y-2 text-gray-700">
+          <li>Pemupukan rutin: Umur 1-3 th: NPK 3x/tahun; Umur >3 th: 4x/tahun.</li>
+          <li>Pengendalian gulma & hama: Herbicide, pestisida organik.</li>
+          <li>Pemangkasan: Buah tanduk & daun kering setiap 3 bulan.</li>
+          <li>Monitoring: Drainase, irigasi jika kering, panen mulai umur 3 th.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Kalkulator -->
+  <section id="kalkulator" class="py-24 px-6 bg-gradient-to-t from-green-50 to-transparent dark:from-gray-900">
+    <h2 class="text-5xl font-bold text-center mb-16 text-[var(--accent)]" data-aos="fade-up">
+      Kalkulator Hasil Panen
+    </h2>
+    <div class="max-w-3xl mx-auto glass p-10 rounded-3xl card-3d" data-aos="flip-left">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <input type="number" id="luas" value="10" placeholder="Luas Lahan (ha)" class="input input-bordered" data-aos="fade-right">
+        <input type="number" id="jarak" value="9" placeholder="Jarak Tanam (m)" class="input input-bordered" data-aos="fade-left">
+        <input type="number" id="produksi" value="25" placeholder="Produksi/pohon (kg)" class="input input-bordered" data-aos="fade-right" data-aos-delay="100">
+        <input type="number" id="harga" value="2200" placeholder="Harga Jual (Rp/kg)" class="input input-bordered" data-aos="fade-left" data-aos-delay="100">
+        <input type="number" id="curah" value="200" placeholder="Curah Hujan (mm)" class="input input-bordered col-span-2" data-aos="fade-up" data-aos-delay="200">
+      </div>
+      <div id="hasil-kalkulator" class="mt-8 p-8 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] rounded-2xl text-white text-center text-lg pulse"></div>
+      <div class="flex gap-4 mt-6">
+        <button onclick="hitungKalkulator(); confettiBurst()" class="btn bg-[var(--primary)] text-white flex-1 card-3d">Hitung & Rayakan!</button>
+        <button onclick="exportPDF()" class="btn btn-outline flex-1">Unduh PDF</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-16 mt-24">
+    <div class="container mx-auto text-center">
+      <p class="text-3xl font-bold mb-3">SIP-KS V3.0</p>
+      <p class="text-lg mb-2">Tugas Mata Kuliah: [Manajemen Budaya Kelapa Sawit]</p>
+      <p class="text-sm opacity-80">Dosen Pengampu: Bapak Arif, S.T., M.Kom</p>
+      <p class="text-sm opacity-70 mt-4">© 2025 • Dibuat dengan ❤️ untuk Pendidikan Sawit Indonesia</p>
+    </div>
+  </footer>
+
+  <!-- Floating Buttons -->
+  <div class="fullscreen-btn flex gap-3">
+    <button onclick="scrollToTop()" class="btn btn-circle btn-primary shadow-lg">
+      <i data-lucide="arrow-up"></i>
+    </button>
+  </div>
+
+  <!-- Scripts moved to end of body, with defer -->
+  <!-- Chart.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- AOS Animation -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css"/>
+  <script defer src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <!-- Lucide Icons -->
+  <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <!-- jsPDF -->
+  <script defer src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Lottie -->
+  <script defer src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+  <!-- Confetti -->
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Custom JS (wrapped in DOMContentLoaded for non-blocking) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      AOS.init({ duration: 1000, once: false });
+
+      // Dark Mode
+      function toggleDark() {
+        document.documentElement.classList.toggle('dark');
+        const isDark = document.documentElement.classList.contains('dark');
+        document.getElementById('icon-moon').classList.toggle('hidden', isDark);
+        document.getElementById('icon-sun').classList.toggle('hidden', !isDark);
+        localStorage.setItem('dark', isDark);
+      }
+      if (localStorage.getItem('dark') === 'true') toggleDark();
+
+      // Fullscreen & Scroll to Top
+      function enterFullscreen() { document.documentElement.requestFullscreen(); }
+      function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
+      // Confetti
+      function confettiBurst() { confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); }
+
+      // Voice
+      function bacaPenjelasan() {
+        const text = document.getElementById('detail-content').innerText;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'id-ID';
+        speechSynthesis.speak(utterance);
+      }
+
+      // Export PDF
+      function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text("Laporan Hasil SIP-KS", 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Luas: ${document.getElementById('luas').value} ha`, 20, 40);
+        doc.text(document.getElementById('hasil-kalkulator').innerText, 20, 50);
+        doc.save("sip-ks-laporan.pdf");
+      }
+
+      // LocalStorage
+      function simpanData() {
+        localStorage.setItem('sipks_v3', JSON.stringify({
+          luas: document.getElementById('luas').value,
+          jarak: document.getElementById('jarak').value,
+          produksi: document.getElementById('produksi').value,
+          harga: document.getElementById('harga').value,
+          curah: document.getElementById('curah').value,
+          tinggi5: document.getElementById('edit-tinggi5').value,
+          produksi5: document.getElementById('edit-produksi5').value
+        }));
+      }
+
+      // Data Pertumbuhan (Asli dari IOPRI/BPS, editable)
+      let growthData = {
+        umur: [0, 1, 2, 3, 4, 5],
+        tinggi: [0.3, 1.0, 2.0, 3.0, 4.0, 5.0], // m, estimasi asli dari sumber umum IOPRI
+        produksi: [0, 0, 0, 5, 8, 10] // ton TBS/ha, berdasarkan produktivitas awal
+      };
+
+      // Tahapan (dari sumber terpercaya)
+      const tahapan = [
+        {name: 'Persiapan Lahan', color: '#22c55e', detail: 'Pembersihan vegetasi, pemancangan, uji tanah pH 4-6.5.<grok-card data-id="0ef116" data-type="citation_card"></grok-card>'},
+        {name: 'Pemilihan Bibit', color: '#f59e0b', detail: 'Bibit unggul bersertifikat, umur 12 bulan, tinggi >1m.<grok-card data-id="7944a3" data-type="citation_card"></grok-card>'},
+        {name: 'Pembibitan', color: '#8b5cf6', detail: 'Single atau double stage, penyemaian di polibag 12x35 cm.<grok-card data-id="12ce84" data-type="citation_card"></grok-card>'},
+        {name: 'Penanaman', color: '#ef4444', detail: 'Lubang 50x40x40 cm, tanam di musim hujan, pupuk dasar.<grok-card data-id="aa6946" data-type="citation_card"></grok-card>'},
+        {name: 'Perawatan & Panen', color: '#3b82f6', detail: 'Pemupukan rutin, pengendalian hama, panen mulai umur 3 tahun.<grok-card data-id="f453bf" data-type="citation_card"></grok-card>'}
+      ];
+
+      // Data Curah Hujan Rata-rata Bulanan (historis BMKG, mm)
+      const curahData = {
+        riau: [240, 220, 250, 260, 240, 200, 180, 200, 240, 280, 300, 280], // Jan-Dec, rata-rata
+        kalimantan: [300, 280, 250, 220, 200, 180, 160, 180, 220, 250, 280, 300],
+        sumut: [250, 230, 200, 180, 160, 140, 130, 150, 180, 220, 250, 280]
+      };
+
+      // Render Mindmap
+      function renderMindmap() {
+        const mindmap = document.getElementById('mindmap');
+        tahapan.forEach((t) => {
+          const node = document.createElement('div');
+          node.className = 'node-circle';
+          node.style.background = t.color;
+          node.textContent = t.name;
+          node.onclick = () => showDetail(t);
+          mindmap.appendChild(node);
+        });
+      }
+
+      function showDetail(tahap) {
+        document.getElementById('detail-content').innerHTML = tahap.detail;
+        document.getElementById('detail-section').classList.remove('hidden');
+      }
+
+      // Update Growth Charts
+      let chartTinggi, chartProduksi;
+      function updateGrowthCharts() {
+        const tinggi5 = parseFloat(document.getElementById('edit-tinggi5').value) || 5.0;
+        const produksi5 = parseFloat(document.getElementById('edit-produksi5').value) || 10;
+        growthData.tinggi[5] = tinggi5;
+        growthData.produksi[5] = produksi5;
+        simpanData();
+
+        if (chartTinggi) chartTinggi.destroy();
+        if (chartProduksi) chartProduksi.destroy();
+
+        chartTinggi = new Chart(document.getElementById('chartTinggi'), {
+          type: 'line',
+          data: { labels: growthData.umur, datasets: [{ label: 'Tinggi (m)', data: growthData.tinggi, borderColor: 'green' }] },
+          options: { scales: { y: { beginAtZero: true } } }
+        });
+        chartProduksi = new Chart(document.getElementById('chartProduksi'), {
+          type: 'bar',
+          data: { labels: growthData.umur, datasets: [{ label: 'Produksi (ton/ha)', data: growthData.produksi, backgroundColor: 'orange' }] },
+          options: { scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      // Render Tabel Edit
+      function renderTabelEdit() {
+        const tbody = document.getElementById('tabel-body');
+        growthData.umur.forEach((umur, i) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${umur}</td>
+            <td><input type="number" value="${growthData.tinggi[i]}" step="0.1" class="input input-bordered input-xs w-full" onchange="updateGrowthData(${i}, 'tinggi', this.value)"></td>
+            <td><input type="number" value="${growthData.produksi[i]}" step="0.1" class="input input-bordered input-xs w-full" onchange="updateGrowthData(${i}, 'produksi', this.value)"></td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function updateGrowthData(index, type, value) {
+        growthData[type][index] = parseFloat(value) || 0;
+        updateGrowthCharts();
+        simpanData();
+      }
+
+      // Update Simulasi
+      function updateSimulasi() {
+        const curah = document.getElementById('sim-curah').value;
+        const pupuk = document.getElementById('sim-pupuk').value;
+        document.getElementById('val-curah').textContent = `${curah} mm`;
+        document.getElementById('val-pupuk').textContent = `${pupuk} kg`;
+        document.getElementById('hasil-simulasi').textContent = `Hasil Simulasi: ${(curah * pupuk / 100).toFixed(2)} unit`; // Rumus contoh
+      }
+
+      // Jarak Tanam Simulasi
+      document.getElementById('sim-jarak').oninput = function() {
+        const jarak = this.value;
+        document.getElementById('val-jarak').textContent = `${jarak} m`;
+        const pohon = Math.floor(10000 / (jarak * jarak));
+        document.getElementById('pohon-ha').textContent = `Pohon/ha: ${pohon}`;
+      };
+
+      // Update Chart Cuaca
+      let chartCuaca;
+      function updateChartCuaca() {
+        const lokasi = document.getElementById('lokasi-cuaca').value;
+        const data = curahData[lokasi] || curahData.riau;
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        if (chartCuaca) chartCuaca.destroy();
+        chartCuaca = new Chart(document.getElementById('chartCurahHujan'), {
+          type: 'line',
+          data: { labels: labels, datasets: [{ label: 'Curah Hujan (mm)', data: data, borderColor: 'blue' }] },
+          options: { scales: { y: { beginAtZero: true } } }
+        });
+      }
+
+      // Hitung Kalkulator
+      function hitungKalkulator() {
+        const luas = parseFloat(document.getElementById('luas').value) || 0;
+        const jarak = parseFloat(document.getElementById('jarak').value) || 9;
+        const produksi = parseFloat(document.getElementById('produksi').value) || 25;
+        const harga = parseFloat(document.getElementById('harga').value) || 2200;
+        const curah = parseFloat(document.getElementById('curah').value) || 200;
+        const pohon = Math.floor(10000 / (jarak * jarak)) * luas;
+        const total = pohon * produksi * harga * (curah / 200);
+        document.getElementById('hasil-kalkulator').innerHTML = `Estimasi Panen: ${total.toLocaleString('id-ID')} Rp`;
+        simpanData();
+      }
+
+      // Init
+      const saved = localStorage.getItem('sipks_v3');
+      if (saved) {
+        const data = JSON.parse(saved);
+        Object.keys(data).forEach(k => {
+          const elem = document.getElementById(k);
+          if (elem) elem.value = data[k];
+        });
+        growthData.tinggi[5] = parseFloat(data.tinggi5) || 5.0;
+        growthData.produksi[5] = parseFloat(data.produksi5) || 10;
+      }
+      renderMindmap();
+      updateGrowthCharts();
+      renderTabelEdit();
+      updateChartCuaca();
+      hitungKalkulator();
+      updateSimulasi();
+
+      ['luas','jarak','produksi','harga','curah'].forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) elem.oninput = () => { hitungKalkulator(); simpanData(); };
+      });
+      document.getElementById('sim-curah').oninput = updateSimulasi;
+      document.getElementById('sim-pupuk').oninput = updateSimulasi;
+
+      // Peta
+      const map = L.map('map').setView([0.7893, 113.9213], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      L.marker([1.5, 101.5]).addTo(map).bindPopup('Riau - Ideal!');
+      L.marker([-1.5, 113.9]).addTo(map).bindPopup('Kalimantan - Ideal!');
+
+      // Registrasi Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+          .then((reg) => console.log('Service Worker registered successfully', reg))
+          .catch((err) => console.error('Service Worker registration failed', err));
+      }
+    });
+  </script>
+</body>
+</html>
